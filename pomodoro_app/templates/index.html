@@ -1,29 +1,48 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ポモドーロ勉強記録</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-        .container { border: 1px solid #ccc; display: inline-block; padding: 20px; border-radius: 10px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Hello World!</h1>
-        <p>ポモドーロ勉強管理アプリのプロトタイプ</p>
-        
-        <hr>
-        
-        <div>
-            <h3>タイマー: <span id="timer">25:00</span></h3>
-            <button onclick="alert('タイマー開始！')">スタート</button>
-            <button onclick="alert('ルーレットを回します')">ルーレットで回数を決める</button>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <h1 class="mb-3">ポモドーロ・ルーレット</h1>
+    <p class="lead text-muted">今日は何セット勉強する？運命を回そう！</p>
+
+    <!-- ルーレット描画エリア -->
+    <div class="roulette-wrapper position-relative d-inline-block mt-4 mb-4">
+        <!-- 矢印マーカー -->
+        <div class="pointer" style="
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #dc3545;
+            z-index: 10;">
         </div>
-        
-        <p><a href="#">今月の統計を見る（未実装）</a></p>
+        <canvas id="rouletteCanvas" width="400" height="400"></canvas>
     </div>
-</body>
-</html>
+
+    <!-- 操作ボタンエリア -->
+    <div class="controls mt-3">
+        <button id="spinBtn" class="btn btn-primary btn-lg px-5 shadow">
+            <i class="fas fa-sync-alt"></i> スタート！
+        </button>
+    </div>
+
+    <!-- 結果表示エリア（最初は非表示） -->
+    <div id="resultArea" class="mt-4 p-4 bg-light rounded shadow-sm" style="display: none; max-width: 500px; margin: 0 auto;">
+        <h2 class="display-4 font-weight-bold text-success">
+            <span id="resultText"></span> セット
+        </h2>
+        <p>頑張りましょう！</p>
+        <!-- タイマー画面へセット数を渡して遷移 -->
+        <button id="goToTimerBtn" class="btn btn-success btn-lg mt-2">
+            タイマーへ移動 <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+
+<!-- ルーレットのロジックを読み込み -->
+<script src="{{ url_for('static', filename='js/roulette.js') }}"></script>
+{% endblock %}
