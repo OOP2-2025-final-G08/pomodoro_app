@@ -27,9 +27,9 @@
 
 {% block scripts %}
 <script>
-// --- 時間設定（テスト用に10秒） ---
-const WORK_TIME = 5; 
-const BREAK_TIME = 10;
+// --- 時間設定（テスト用） ---
+const WORK_TIME = 5;    // 作業時間5秒　一旦短縮本来は25分 = 1500秒
+const BREAK_TIME = 10;  // 休憩時間10秒　一旦短縮本来は5分 = 300秒
 
 let timerInterval;
 let timeLeft = WORK_TIME;
