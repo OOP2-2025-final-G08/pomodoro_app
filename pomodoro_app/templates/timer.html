@@ -3,28 +3,270 @@
 {% block title %}タイマー & ルーレット{% endblock %}
 
 {% block content %}
-<div class="timer-container text-center">
-    <div id="session-info" class="mb-4 p-3 bg-light rounded shadow-sm d-inline-block">
-        <h4 class="mb-0">今日の目標: <span id="target-count" class="text-primary">--</span> セット</h4>
-        <small class="text-muted">（現在の完了: <span id="completed-count">0</span> セット）</small>
+<style>
+    /* 状態別の色設定 */
+    .theme-work {
+        --main-color: #3498db;
+        --bg-hover: #3498db;
+        --btn-text: #3498db;
+    }
+    .theme-break {
+        --main-color: #e67e22;
+        --bg-hover: #e67e22;
+        --btn-text: #e67e22;
+    }
+
+    .timer-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-top: 50px;
+        /* フォントを丸みのあるものに変更 */
+        font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Ubuntu", sans-serif;
+    }
+
+    .goal-section {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .goal-label {
+        font-size: 1.1rem;
+        color: #888;
+        margin-bottom: 5px;
+    }
+    #roulette-result {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #444;
+    }
+
+    .timer-circle-wrapper {
+        position: relative;
+        width: 320px;
+        height: 320px;
+        margin-bottom: 60px;
+    }
+
+    .timer-background {
+        fill: none;
+        stroke: #f0f0f0;
+        stroke-width: 12;
+    }
+
+    .timer-progress {
+        fill: none;
+        stroke: var(--main-color);
+        stroke-width: 12;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dashoffset 1s linear, stroke 0.6s ease;
+    }
+
+    .no-transition {
+        transition: none !important;
+    }
+
+    .timer-content {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 数字のフォントを細く、丸みのあるものに */
+    #timer-display {
+        font-size: 5.5rem;
+        font-weight: 100;
+        color: #333;
+        letter-spacing: -2px; /* 数字の間隔を少し詰めて柔らかく */
+        line-height: 1;
+    }
+    
+    /* ラベルのフォント */
+    #timer-label {
+        font-size: 1.4rem;
+        color: var(--main-color);
+        font-weight: 600;
+        transition: color 0.6s ease;
+        margin-top: 5px;
+    }
+
+    .controls-group {
+        display: flex;
+        gap: 15px;
+        width: 100%;
+        max-width: 500px;
+        justify-content: center;
+    }
+
+    .control-btn {
+        flex: 1;
+        background: white;
+        border: 2px solid var(--main-color);
+        border-radius: 35px;
+        padding: 14px 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--btn-text);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .control-btn:hover:not(:disabled) {
+        background: var(--main-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .control-btn:disabled {
+        color: #ccc;
+        border-color: #eee;
+        background: #fafafa;
+        box-shadow: none;
+    }
+</style>
+
+<div class="timer-container theme-work" id="main-container">
+    <div class="goal-section">
+        <div class="goal-label">今日の目標</div>
+        <div id="roulette-result">-- セット</div>
     </div>
 
-    <div class="timer-section">
-        <div class="timer-label" id="timer-label">作業中</div>
-        <div class="timer-display" id="timer-display">00:05</div>
-        <div class="controls mt-4">
-            <button id="start-btn" class="btn btn-primary btn-lg px-4">開始</button>
-            <button id="pause-btn" class="btn btn-secondary btn-lg px-4" disabled>一時停止</button>
-            <button id="reset-btn" class="btn btn-outline-danger btn-lg px-4">リセット</button>
+    <div class="timer-circle-wrapper">
+        <svg width="320" height="320">
+            <circle class="timer-background" cx="160" cy="160" r="145"></circle>
+            <circle class="timer-progress" id="progress-bar" cx="160" cy="160" r="145"></circle>
+        </svg>
+        <div class="timer-content">
+            <div id="timer-display">00:05</div>
+            <div id="timer-label">作業中</div>
         </div>
     </div>
 
-    <p id="goal-msg" class="mt-4" style="display: none; font-weight: 600;"></p>
+    <div class="controls-group">
+        <button id="start-btn" class="control-btn">スタート</button>
+        <button id="pause-btn" class="control-btn" disabled>一時停止</button>
+        <button id="reset-btn" class="control-btn">リセット</button>
+    </div>
 </div>
 
 <audio id="alarm-sound" src="{{ url_for('static', filename='sounds/alarm.mp3') }}"></audio>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+<script>
+// --- 時間設定（テスト用 5秒/5秒） ---
+const WORK_TIME = 5; 
+const BREAK_TIME = 5;
+
+let timerInterval;
+let timeLeft = WORK_TIME;
+let isRunning = false;
+let currentMode = 'work';
+
+const container = document.getElementById('main-container');
+const display = document.getElementById('timer-display');
+const label = document.getElementById('timer-label');
+const startBtn = document.getElementById('start-btn');
+const pauseBtn = document.getElementById('pause-btn');
+const resetBtn = document.getElementById('reset-btn');
+const alarmSound = document.getElementById('alarm-sound');
+const rouletteResult = document.getElementById('roulette-result');
+const progressBar = document.getElementById('progress-bar');
+
+const radius = progressBar.r.baseVal.value;
+const circumference = 2 * Math.PI * radius;
+
+progressBar.style.strokeDasharray = `${circumference} ${circumference}`;
+progressBar.style.strokeDashoffset = 0;
+
+function setProgress(percent) {
+    const offset = percent <= 0 ? circumference : circumference - (percent / 100) * circumference;
+    progressBar.style.strokeDashoffset = offset;
+}
+
+function updateDisplay() {
+    const mins = Math.floor(timeLeft / 60);
+    const secs = timeLeft % 60;
+    display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    
+    const totalTime = currentMode === 'work' ? WORK_TIME : BREAK_TIME;
+    const percentage = (timeLeft / totalTime) * 100;
+    setProgress(percentage);
+}
+
+function loadParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sets = urlParams.get('sets');
+    if (sets) rouletteResult.textContent = sets + " セット";
+}
+
+function startTimer() {
+    if (isRunning) return;
+    progressBar.classList.remove('no-transition');
+    alarmSound.pause();
+    alarmSound.currentTime = 0;
+    isRunning = true;
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            setTimeout(finishSession, 1000);
+        }
+    }, 1000);
+}
+
+function pauseTimer() {
+    isRunning = false;
+    clearInterval(timerInterval);
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+}
+
+function resetTimer() {
+    pauseTimer();
+    alarmSound.pause();
+    alarmSound.currentTime = 0;
+    progressBar.classList.add('no-transition');
+    timeLeft = currentMode === 'work' ? WORK_TIME : BREAK_TIME;
+    updateDisplay();
+}
+
+function finishSession() {
+    isRunning = false;
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+    alarmSound.play().catch(e => console.log(e));
+    if (currentMode === 'work') {
+        currentMode = 'break';
+        timeLeft = BREAK_TIME;
+        label.textContent = '休憩中';
+        container.classList.replace('theme-work', 'theme-break');
+    } else {
+        currentMode = 'work';
+        timeLeft = WORK_TIME;
+        label.textContent = '作業中';
+        container.classList.replace('theme-break', 'theme-work');
+    }
+    progressBar.classList.add('no-transition');
+    updateDisplay();
+}
+
+startBtn.addEventListener('click', startTimer);
+pauseBtn.addEventListener('click', pauseTimer);
+resetBtn.addEventListener('click', resetTimer);
+
+loadParams();
+updateDisplay();
+</script>
 {% endblock %}
