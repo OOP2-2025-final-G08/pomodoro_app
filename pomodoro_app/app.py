@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 from models import init_db
 from routes.timer_routes import timer_bp
+from routes.stats_routes import stats_bp
 
 # アプリ起動時にデータベースとテーブルを作成する
 init_db()
@@ -9,6 +10,7 @@ app = Flask(__name__)
 
 # タイマー関連のAPI（保存処理など）をアプリに登録する
 app.register_blueprint(timer_bp)
+app.register_blueprint(stats_bp)
 
 # トップページ（ルーレット画面）
 @app.route('/')
