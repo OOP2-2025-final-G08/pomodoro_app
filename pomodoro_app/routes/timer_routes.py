@@ -1,27 +1,56 @@
-from flask import Blueprint, render_template, request, jsonify # requestを追加
-from models.session import Session
+from flask import Blueprint, render_template, request, jsonify
+from models.session import Session, db
 import datetime
 
 timer_bp = Blueprint('timer', __name__)
 
-# タイマー画面を表示するルート（app.pyからこっちに引っ越し！）
+# メモリ保持用の変数
+today_goal_sets = None
+last_roulette_date = None 
+
 @timer_bp.route('/timer')
-def timer_page(): # 関数名がぶつからないように timer_page にしておくと安全！
-    sets = request.args.get('sets', default=1, type=int)
-    return render_template('timer.html', sets=sets)
+def timer_page():
+    global today_goal_sets, last_roulette_date
+    
+    # URLパラメータからセット数を取得（ルーレット回転直後の遷移時）
+    sets_param = request.args.get('sets', type=int)
+    
+    if sets_param is not None:
+        today_goal_sets = sets_param
+        last_roulette_date = datetime.date.today()
+    
+    return render_template('timer.html', sets=today_goal_sets)
 
-# API: セッション保存（JS側に合わせて /api/session に修正）
-@timer_bp.route('/api/session', methods=['POST'])
-def save_session():
-    data = request.json
-    new_session = Session.create(
-        duration_minutes=data.get('duration', 0),
-        sets_completed=data.get('sets', 0),
-        created_at=datetime.datetime.now()
-    )
-    return jsonify({"status": "success", "id": new_session.id})
+@timer_bp.route('/api/roulette/status')
+def roulette_status():
+    """今日すでにルーレットを回したか判定するAPI"""
+    global last_roulette_date
+    today = datetime.date.today()
+    already_spun = (last_roulette_date == today)
+    return jsonify({"already_spun": already_spun})
 
-# API: 今日の目標
 @timer_bp.route('/api/goal/today', methods=['GET'])
 def get_today_goal():
-    return jsonify({"daily_target_minutes": 60, "status": "success"})
+    """フロントエンドが現在の目標セット数を取得するためのAPI"""
+    global today_goal_sets
+    return jsonify({
+        "status": "success",
+        "target_sets": today_goal_sets if today_goal_sets is not None else 0
+    })
+
+@timer_bp.route('/api/session', methods=['POST'])
+def save_session():
+    """1セット完了ごとにDBに実績を記録するAPI"""
+    data = request.json
+    try:
+        new_session = Session.create(
+            duration_minutes=data.get('duration', 0),
+            sets_completed=data.get('sets', 1),
+            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
+            category='work',
+            status='completed'
+        )
+        return jsonify({"status": "success", "id": new_session.id})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
