@@ -1,8 +1,6 @@
 from peewee import Model, DateTimeField, IntegerField, CharField, DateField, SqliteDatabase
+from .db import db
 import datetime
-
-# 外部ファイルを使わず、ここで直接DBを定義
-db = SqliteDatabase('pomodoro.db')
 
 class Session(Model):
     created_at = DateTimeField(default=datetime.datetime.now)
