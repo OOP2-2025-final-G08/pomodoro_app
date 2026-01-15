@@ -5,44 +5,82 @@
     <h1 class="mb-3">ポモドーロ・ルーレット</h1>
     <p class="lead text-muted">今日は何セット勉強する？運命を回そう！</p>
 
-    <!-- ルーレット描画エリア -->
+    <div id="statusMessage" class="alert alert-warning d-none" style="max-width: 500px; margin: 0 auto 20px;">
+        本日のルーレットはすでに完了しています。
+    </div>
+
     <div class="roulette-wrapper position-relative d-inline-block mt-4 mb-4">
-        <!-- 矢印マーカー -->
-        <div class="pointer" style="
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 30px solid #dc3545;
-            z-index: 10;">
-        </div>
+        <div class="pointer" style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid #dc3545; z-index: 10;"></div>
         <canvas id="rouletteCanvas" width="400" height="400"></canvas>
     </div>
 
-    <!-- 操作ボタンエリア -->
     <div class="controls mt-3">
         <button id="spinBtn" class="btn btn-primary btn-lg px-5 shadow">
             <i class="fas fa-sync-alt"></i> スタート！
         </button>
     </div>
 
-    <!-- 結果表示エリア（最初は非表示） -->
     <div id="resultArea" class="mt-4 p-4 bg-light rounded shadow-sm" style="display: none; max-width: 500px; margin: 0 auto;">
         <h2 class="display-4 font-weight-bold text-success">
             <span id="resultText"></span> セット
         </h2>
         <p>頑張りましょう！</p>
-        <!-- タイマー画面へセット数を渡して遷移 -->
         <button id="goToTimerBtn" class="btn btn-success btn-lg mt-2">
             タイマーへ移動 <i class="fas fa-arrow-right"></i>
         </button>
     </div>
 </div>
 
-<!-- ルーレットのロジックを読み込み -->
 <script src="{{ url_for('static', filename='js/roulette.js') }}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const spinBtn = document.getElementById('spinBtn');
+    const statusMessage = document.getElementById('statusMessage');
+    const resultArea = document.getElementById('resultArea');
+    const resultText = document.getElementById('resultText');
+    const goToTimerBtn = document.getElementById('goToTimerBtn');
+    let currentResult = null;
+
+    function disableSpin() {
+        spinBtn.disabled = true;
+        spinBtn.classList.replace('btn-primary', 'btn-secondary');
+        spinBtn.innerHTML = '<i class="fas fa-lock"></i> 本日は終了';
+        statusMessage.classList.remove('d-none');
+    }
+
+    // 1. 起動時にステータス確認
+    fetch('/api/roulette/status')
+        .then(res => res.json())
+        .then(data => {
+            if (data.already_spun) disableSpin();
+        });
+
+    // 2. ボタンクリック（連打ガード）
+    spinBtn.addEventListener('click', function() {
+        if (spinBtn.disabled) return;
+        spinBtn.disabled = true; // 即座にロック
+        
+        if (typeof window.startSpin === 'function') {
+            window.startSpin();
+        }
+    });
+
+    // 3. ルーレット終了時のコールバック
+    window.onRouletteFinished = function(sets) {
+        currentResult = sets;
+        disableSpin(); // UIをロック
+
+        // サーバーに日付を記録させる（/timer?sets=X にアクセス）
+        fetch(`/timer?sets=${sets}`)
+            .then(() => console.log("Success: Daily limit updated."));
+    };
+
+    goToTimerBtn.addEventListener('click', function() {
+        if (currentResult) {
+            window.location.href = `/timer?sets=${currentResult}`;
+        }
+    });
+});
+</script>
 {% endblock %}

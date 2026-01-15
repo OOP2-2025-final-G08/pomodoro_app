@@ -22,8 +22,7 @@
         align-items: center;
         justify-content: center;
         margin-top: 50px;
-        /* フォントを丸みのあるものに変更 */
-        font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Ubuntu", sans-serif;
+        font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", sans-serif;
     }
 
     .goal-section {
@@ -37,8 +36,27 @@
     }
     #roulette-result {
         font-size: 2.2rem;
-        font-weight: 700;
+        font-weight: bold;
         color: #444;
+    }
+
+    /* 達成メッセージ */
+    #achievement-msg {
+        display: none;
+        background: #d4edda;
+        color: #155724;
+        padding: 15px 30px;
+        border-radius: 50px;
+        margin-bottom: 20px;
+        border: 2px solid #c3e6cb;
+        font-weight: bold;
+        animation: bounceIn 0.8s;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    @keyframes bounceIn {
+        from { opacity: 0; transform: scale(0.5); }
+        to { opacity: 1; transform: scale(1); }
     }
 
     .timer-circle-wrapper {
@@ -78,20 +96,18 @@
         justify-content: center;
     }
 
-    /* 数字のフォントを細く、丸みのあるものに */
     #timer-display {
         font-size: 5.5rem;
-        font-weight: 100;
+        font-weight: bold;
         color: #333;
-        letter-spacing: -2px; /* 数字の間隔を少し詰めて柔らかく */
+        letter-spacing: -2px;
         line-height: 1;
     }
     
-    /* ラベルのフォント */
     #timer-label {
         font-size: 1.4rem;
         color: var(--main-color);
-        font-weight: 600;
+        font-weight: bold;
         transition: color 0.6s ease;
         margin-top: 5px;
     }
@@ -111,7 +127,7 @@
         border-radius: 35px;
         padding: 14px 0;
         font-size: 1.1rem;
-        font-weight: 700;
+        font-weight: bold;
         color: var(--btn-text);
         cursor: pointer;
         transition: all 0.3s ease;
@@ -134,9 +150,13 @@
 </style>
 
 <div class="timer-container theme-work" id="main-container">
+    <div id="achievement-msg">
+        🎉 今日の目標を達成しました！
+    </div>
+
     <div class="goal-section">
         <div class="goal-label">今日の目標</div>
-        <div id="roulette-result">-- セット</div>
+        <div id="roulette-result">読み込み中...</div>
     </div>
 
     <div class="timer-circle-wrapper">
@@ -145,7 +165,7 @@
             <circle class="timer-progress" id="progress-bar" cx="160" cy="160" r="145"></circle>
         </svg>
         <div class="timer-content">
-            <div id="timer-display">00:05</div>
+            <div id="timer-display">00:00</div>
             <div id="timer-label">作業中</div>
         </div>
     </div>
@@ -170,6 +190,8 @@ let timerInterval;
 let timeLeft = WORK_TIME;
 let isRunning = false;
 let currentMode = 'work';
+let completedSets = 0;
+let targetSets = 0;
 
 const container = document.getElementById('main-container');
 const display = document.getElementById('timer-display');
@@ -180,6 +202,7 @@ const resetBtn = document.getElementById('reset-btn');
 const alarmSound = document.getElementById('alarm-sound');
 const rouletteResult = document.getElementById('roulette-result');
 const progressBar = document.getElementById('progress-bar');
+const achievementMsg = document.getElementById('achievement-msg');
 
 const radius = progressBar.r.baseVal.value;
 const circumference = 2 * Math.PI * radius;
@@ -200,16 +223,32 @@ function updateDisplay() {
     const totalTime = currentMode === 'work' ? WORK_TIME : BREAK_TIME;
     const percentage = (timeLeft / totalTime) * 100;
     setProgress(percentage);
+
+    // 目標値が読み込まれていれば表示を維持
+    if (targetSets > 0) {
+        rouletteResult.textContent = targetSets + " セット";
+    }
 }
 
 function loadParams() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sets = urlParams.get('sets');
-    if (sets) rouletteResult.textContent = sets + " セット";
+    fetch('/api/goal/today')
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success' && data.target_sets) {
+                targetSets = data.target_sets;
+                rouletteResult.textContent = targetSets + " セット";
+            } else {
+                rouletteResult.textContent = "未設定";
+            }
+        })
+        .catch(() => {
+            rouletteResult.textContent = "取得エラー";
+        });
 }
 
 function startTimer() {
     if (isRunning) return;
+    achievementMsg.style.display = 'none'; 
     progressBar.classList.remove('no-transition');
     alarmSound.pause();
     alarmSound.currentTime = 0;
@@ -242,12 +281,34 @@ function resetTimer() {
     updateDisplay();
 }
 
+function saveStats() {
+    fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            duration: Math.floor(WORK_TIME / 60) || 25,
+            sets: 1 
+        })
+    })
+    .then(res => res.json())
+    .then(data => console.log("実績保存:", data));
+}
+
 function finishSession() {
     isRunning = false;
     startBtn.disabled = false;
     pauseBtn.disabled = true;
     alarmSound.play().catch(e => console.log(e));
+
     if (currentMode === 'work') {
+        completedSets++;
+        saveStats();
+        
+        // 達成判定
+        if (targetSets > 0 && completedSets >= targetSets) {
+            achievementMsg.style.display = 'block';
+        }
+
         currentMode = 'break';
         timeLeft = BREAK_TIME;
         label.textContent = '休憩中';
