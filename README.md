@@ -8,7 +8,6 @@
 
 ## 動作条件: require
 
-> 動作に必要な条件を書いてください。
 
 ```bash
 python 3.13 or higher
@@ -20,7 +19,6 @@ peewee==3.17.7
 
 ## 使い方: usage
 
-> このリポジトリのアプリを動作させるために行う手順を詳細に書いてください。
 
 ```bash
 $ python app.py
