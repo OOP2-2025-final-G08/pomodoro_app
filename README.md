@@ -13,7 +13,7 @@
 ## アプリ画面
 スタートボタンを押してルーレットを回します
 <img width="1449" height="748" alt="Image" src="https://github.com/user-attachments/assets/0cc69125-56c1-4c9f-b950-7ee6b8bcbf35" />
-
+ルーレットを回すとタイマーへ移動のボタンが出現しそれをクリックするとタイマーの画面に遷移する
 <img width="1450" height="741" alt="Image" src="https://github.com/user-attachments/assets/57f80839-70c7-4fe8-a79a-0a8c6bc4c0ab" />
 
 <img width="1450" height="747" alt="Image" src="https://github.com/user-attachments/assets/44ee2b98-ddff-4c3f-be3b-06b1d6c2ca9f" />
