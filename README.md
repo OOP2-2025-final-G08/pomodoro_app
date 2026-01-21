@@ -17,7 +17,8 @@
 <img width="1450" height="747" alt="Image" src="https://github.com/user-attachments/assets/44ee2b98-ddff-4c3f-be3b-06b1d6c2ca9f" />
 
 <img width="1450" height="742" alt="Image" src="https://github.com/user-attachments/assets/c4053ca0-6d4e-4e60-b8ea-e8fdc9ea69f6" />
-今月の作業した回数と目標数が日付ごとに表示されます
+
+今月の実績グラフをクリックすると、今月の作業した回数と目標数が日付ごとに表示されます
 <img width="1451" height="745" alt="Image" src="https://github.com/user-attachments/assets/26a899b3-4567-4def-8988-ae61b2721a53" />
 
 ## 動作条件
