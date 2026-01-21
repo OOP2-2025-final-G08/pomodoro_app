@@ -15,9 +15,9 @@
 <img width="1449" height="748" alt="Image" src="https://github.com/user-attachments/assets/0cc69125-56c1-4c9f-b950-7ee6b8bcbf35" />
 ルーレットを回すとタイマーへ移動のボタンが出現しそれをクリックするとタイマーの画面に遷移する
 <img width="1450" height="741" alt="Image" src="https://github.com/user-attachments/assets/57f80839-70c7-4fe8-a79a-0a8c6bc4c0ab" />
-
+スタートを押してから25分経過すると休憩のタイマーに変わる
 <img width="1450" height="747" alt="Image" src="https://github.com/user-attachments/assets/44ee2b98-ddff-4c3f-be3b-06b1d6c2ca9f" />
-
+スタートを押してから5分経過すると作業のタイマーに変わる
 <img width="1450" height="742" alt="Image" src="https://github.com/user-attachments/assets/c4053ca0-6d4e-4e60-b8ea-e8fdc9ea69f6" />
 
 右上にある今月の実績グラフをクリックすると、今月の作業した回数と目標数が日付ごとに表示されます
